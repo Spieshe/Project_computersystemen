@@ -195,7 +195,7 @@ PROC mouseposition
 
     movzx eax, dx		; get mouse height
     cmp eax, 55
-    jle callmousehandler
+    jge callmousehandler
     
 	mov edx, SCRWIDTH
 	mul edx				; obtain vertical offset in eax
