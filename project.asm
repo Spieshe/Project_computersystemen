@@ -170,7 +170,6 @@ ret
 endp DrawFullRectangle
 
 PROC mouseHandler ;; GEKOPIEERD 
-	ARG @@col:byte
     USES    eax, ebx, ecx, edx
 	
 	and bl, 1			; check for two mouse buttons (2 low end bits)
@@ -187,6 +186,30 @@ PROC mouseHandler ;; GEKOPIEERD
 	@@skipit:
     ret
 ENDP mouseHandler
+
+PROC mouseposition
+    USES    eax, ebx, ecx, edx
+    
+	and bl, 3			; check for two mouse buttons (2 low end bits)
+	jz @@skipit			; only execute if a mousebutton is pressed
+
+    movzx eax, dx		; get mouse height
+    cmp eax, 55
+    jle callmousehandler
+    
+	mov edx, SCRWIDTH
+	mul edx				; obtain vertical offset in eax
+	sar cx, 1			; horizontal cursor position is doubled in input 
+	add ax, cx			; add horizontal offset
+	add eax, VMEMADR	; eax now contains pixel address mouse is pointing to
+	jmp @@skipit
+	
+@@callmousehandler:
+	call mouseHandler
+	
+@@skipit:
+    ret
+ENDP mouseposition
 
 
 ; ; Wait for a specific keystroke.
@@ -221,7 +244,7 @@ PROC main
 
 	call setVideoMode,13h
 
-       call mouse_install, offset mouseHandler, 15H
+        call mouse_install, offset mouseHandler
 	call	fillBackground, 1Fh
 
 	
