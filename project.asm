@@ -13,6 +13,8 @@ P386
 MODEL FLAT, C
 ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 
+INCLUDE "mouse.inc"
+
 ; compile-time constants (with macros)
 VMEMADR EQU 0A0000h	; video memory address
 SCRWIDTH EQU 320	; screen witdth
@@ -167,6 +169,25 @@ PROC DrawFullRectangle
 ret
 endp DrawFullRectangle
 
+PROC mouseHandler ;; GEKOPIEERD 
+	ARG @@col:byte
+    USES    eax, ebx, ecx, edx
+	
+	and bl, 1			; check for two mouse buttons (2 low end bits)
+	jz @@skipit			; only execute if a mousebutton is pressed
+
+    movzx eax, dx		; get mouse height
+	mov edx, SCRWIDTH
+	mul edx				; obtain vertical offset in eax
+	sar cx, 1			; horizontal cursor position is doubled in input 
+	add ax, cx			; add horizontal offset
+	add eax, VMEMADR	; eax now contains pixel address mouse is pointing to
+	mov [eax], bl    	; change color
+
+	@@skipit:
+    ret
+ENDP mouseHandler
+
 
 ; ; Wait for a specific keystroke.
 PROC waitForSpecificKeystroke
@@ -198,9 +219,10 @@ PROC main
 	push ds
 	pop	es
 
-	call	setVideoMode,13h
+	call setVideoMode,13h
+
+       call mouse_install, offset mouseHandler, 15H
 	call	fillBackground, 1Fh
-	
 
 	
 	
@@ -218,6 +240,7 @@ PROC main
 	
 	
 	call waitForSpecificKeystroke, 001Bh ; keycode for ESC
+	call mouse_uninstall
 	call terminateProcess, 001Bh
 ENDP main
 
