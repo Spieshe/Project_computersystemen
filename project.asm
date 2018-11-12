@@ -169,26 +169,26 @@ PROC DrawFullRectangle
 ret
 endp DrawFullRectangle
 
-PROC draweraser
-    USES
-    	
-	mov al, 0 ; read only
-	mov edx, offset eraser
-	mov ah, 3dh
-	int 21h
-	
-	mov edx, SCRWIDTH
-	mov eax, 5
-	mul edx
-	add eax, 100
-	add eax, VMEMADR    ;now eax contains address of pixel on line 5 column 100
-	push eax
-	
-@@horizontalloop:
-	
-
-ret
-endp draweraser
+;PROC draweraser
+ ;   USES
+  ;  	
+;	mov al, 0 ; read only
+;	mov edx, offset eraser
+;	mov ah, 3dh
+;	int 21h
+;	
+;	mov edx, SCRWIDTH
+;	mov eax, 5
+;	mul edx
+;	add eax, 100
+;	add eax, VMEMADR    ;now eax contains address of pixel on line 5 column 100
+;	push eax
+;	
+;@@horizontalloop:
+;	
+;
+;ret
+;endp draweraser
 
 PROC mouseHandler ;; GEKOPIEERD 
 	ARG @@col:byte
