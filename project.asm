@@ -244,7 +244,7 @@ PROC main
 
 	call setVideoMode,13h
 
-        call mouse_install, offset mouseHandler
+        call mouse_install, offset mouseposition
 	call	fillBackground, 1Fh
 
 	
