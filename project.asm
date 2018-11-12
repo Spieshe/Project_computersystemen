@@ -3,9 +3,9 @@
 ; 32-bit x86 assembly language
 ; TASM
 ;
-; author:	David Blinder, Stijn Bettens
+; author:	Cindy Wauters, Dries Van de Steen
 ; date:		23/10/2018
-; program:	Video mode 13h
+; program:	Paintapplication
 ; -------------------------------------------------------------------
 
 IDEAL
