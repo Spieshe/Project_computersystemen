@@ -289,7 +289,7 @@ PROC main
 	
 	call waitForSpecificKeystroke, 001Bh ; keycode for ESC
 	call mouse_uninstall
-	call terminateProcess, 001Bh
+	call terminateProcess
 ENDP main
 
 ; -------------------------------------------------------------------
