@@ -191,10 +191,8 @@ endp DrawFullRectangle
 ;endp draweraser
 
 PROC mouseHandler ;; GEKOPIEERD 
-	ARG @@col:byte
     USES    eax, ebx, ecx, edx
 	
-;	mov bh, [@@col]
 	and bl, 3			; check for one mouse buttons 
 	jz @@skipit			; only execute if a mousebutton is pressed
 
@@ -204,7 +202,7 @@ PROC mouseHandler ;; GEKOPIEERD
 	sar cx, 1			; horizontal cursor position is doubled in input 
 	add ax, cx			; add horizontal offset
 	add eax, VMEMADR	; eax now contains pixel address mouse is pointing to
-	mov bl, [@@col]
+	mov bl, [current_color]
 	mov [eax], bl	; change color
 
 
@@ -296,6 +294,7 @@ ENDP main
 DATASEG
 	palette		db 768 dup (?)
 	eraser		db "eraser.bin", 0
+	current_color db 28h
 ; -------------------------------------------------------------------
 ; STACK
 ; -------------------------------------------------------------------
