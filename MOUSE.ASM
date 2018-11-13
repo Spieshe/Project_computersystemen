@@ -55,7 +55,6 @@ UDATASEG
 DATASEG
 
 custom_mouse_handler    dd ?
-color_mouse dd ?
 
 ;=============================================================================
 ; CODE
@@ -103,7 +102,7 @@ PROC mouse_internal_handler NOLANGUAGE
 
     pop     ax
 
-    call    [custom_mouse_handler], [color_mouse]
+    call    [custom_mouse_handler]
     
     pop     es
     pop     ds
@@ -123,7 +122,7 @@ ENDP mouse_internal_handler
 ;   nothing
 ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 PROC mouse_install
-    ARG     @@custom_handler, @@col:byte
+    ARG     @@custom_handler
     USES    eax, ecx, edx, es
 
     call    mouse_present
@@ -133,9 +132,6 @@ PROC mouse_install
     mov     eax, [@@custom_handler]
     mov     [custom_mouse_handler], eax
 	
-	;mov bl, [@@col]
-	movzx eax, [@@col]
-	mov [color_mouse], eax
 
     push    ds
     mov     ax, cs
