@@ -199,6 +199,33 @@ ecxloopke:
 ret
 endp draweraser
 
+PROC drawjerry
+    USES eax, ebx, ecx, edx, esi, edi
+    	
+	mov esi, offset jerry
+	
+	mov ax, 100
+	mov edx, SCRWIDTH
+	MUL edx
+	add ax, 100
+	
+	mov edi, VMEMADR
+	add edi, eax
+	mov ecx, 16	
+	push ecx
+drawhorizontaal:
+	mov ecx, 16
+	mov eax, [esi]
+	;cmp eax, 28H
+	;je skip
+	mov [edi], eax
+	add esi, 4
+	loop drawhorizontaal
+
+
+ret
+endp drawjerry
+
 PROC mouseHandler ;; GEKOPIEERD 
     USES    eax, ebx, ecx, edx
 	
@@ -293,6 +320,7 @@ PROC main
 	call	DrawFullRectangle,240,25,15, 15, 00h ;kleur 9
 	call	DrawFullRectangle,270,25,15, 15, 0Fh ;kleur 10
 	call	draweraser
+	call	drawjerry
 	
 	
 	call waitForSpecificKeystroke, 001Bh ; keycode for ESC
@@ -319,6 +347,23 @@ DATASEG
 		   db 17H,17H,17H,17H,17H,00H,00H,00H,17H,17H,17H,17H,17H,17H,17H,17H
 		   db 17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H
 		   db 17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H
+		   
+	jerry  db 00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,28H,28H,28H,28H
+		   db 00H,1FH,1FH,1FH,1FH,1FH,1FH,1FH,1FH,1FH,1FH,1FH,00H,28H,28H,28H
+		   db 00H,1FH,1FH,1FH,1FH,1FH,1FH,1FH,1FH,1FH,1FH,00H,28H,28H,28H,28H
+		   db 00H,1FH,1FH,1FH,1FH,1FH,1FH,1FH,1FH,1FH,00H,28H,28H,28H,28H,28H
+		   db 00H,1FH,1FH,1FH,1FH,1FH,1FH,1FH,1FH,00H,28H,28H,28H,28H,28H,28H
+		   db 00H,1FH,1FH,1FH,1FH,1FH,1FH,1FH,00H,28H,28H,28H,28H,28H,28H,28H
+		   db 00H,1FH,1FH,1FH,1FH,1FH,1FH,00H,1FH,00H,28H,28H,28H,28H,28H,28H
+		   db 00H,1FH,1FH,1FH,1FH,1FH,00H,1FH,1FH,1FH,00H,28H,28H,28H,28H,28H
+		   db 00H,1FH,1FH,1FH,1FH,00H,1FH,1FH,1FH,1FH,1FH,00H,28H,28H,28H,28H
+		   db 00H,1FH,1FH,1FH,00H,28H,00H,1FH,1FH,1FH,1FH,1FH,00H,28H,28H,28H
+		   db 00H,1FH,1FH,00H,28H,28H,28H,00H,1FH,1FH,1FH,1FH,1FH,00H,28H,28H
+		   db 00H,1FH,00H,28H,28H,28H,28H,28H,00H,1FH,1FH,1FH,1FH,1FH,00H,28H
+		   db 28H,00H,28H,28H,28H,28H,28H,28H,28H,00H,1FH,1FH,1FH,1FH,1FH,00H
+		   db 28H,28H,28H,28H,28H,28H,28H,28H,28H,28H,00H,1FH,1FH,1FH,00H,28H
+		   db 28H,28H,28H,28H,28H,28H,28H,28H,28H,28H,28H,00H,1FH,00H,28H,28H
+		   db 28H,28H,28H,28H,28H,28H,28H,28H,28H,28H,28H,28H,00H,28H,28H,28H
 	current_color db 28h
 ; -------------------------------------------------------------------
 ; STACK
