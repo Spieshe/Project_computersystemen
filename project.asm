@@ -169,26 +169,35 @@ PROC DrawFullRectangle
 ret
 endp DrawFullRectangle
 
-;PROC draweraser
- ;   USES
-  ;  	
-;	mov al, 0 ; read only
-;	mov edx, offset eraser
-;	mov ah, 3dh
-;	int 21h
-;	
-;	mov edx, SCRWIDTH
-;	mov eax, 5
-;	mul edx
-;	add eax, 100
-;	add eax, VMEMADR    ;now eax contains address of pixel on line 5 column 100
-;	push eax
-;	
-;@@horizontalloop:
-;	
-;
-;ret
-;endp draweraser
+PROC draweraser
+    USES eax, ebx, ecx, edx
+    	
+	mov esi, offset eraser
+	
+	mov ax, 5
+	mov edx, SCRWIDTH
+	MUL edx
+	add ax, 100
+	
+	mov edi, VMEMADR
+	add edi, eax
+	mov ecx, 16	
+	push ecx
+	rep movsb
+	add edi, 304
+	pop ecx
+	dec ecx
+ecxloopke:
+	push ecx
+	mov ecx, 16
+	rep movsb
+	add edi, 304
+	pop ecx
+	loop ecxloopke
+
+
+ret
+endp draweraser
 
 PROC mouseHandler ;; GEKOPIEERD 
     USES    eax, ebx, ecx, edx
@@ -283,6 +292,7 @@ PROC main
 	call	DrawFullRectangle,210,25,15, 15, 06h ;kleur 8
 	call	DrawFullRectangle,240,25,15, 15, 00h ;kleur 9
 	call	DrawFullRectangle,270,25,15, 15, 0Fh ;kleur 10
+	call	draweraser
 	
 	
 	call waitForSpecificKeystroke, 001Bh ; keycode for ESC
@@ -293,7 +303,22 @@ ENDP main
 ; -------------------------------------------------------------------
 DATASEG
 	palette		db 768 dup (?)
-	eraser		db "eraser.bin", 0
+	eraser dw 17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H
+		   dw 17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H
+		   dw 17H,17H,17H,17H,17H,17H,17H,17H,17H,00H,17H,17H,17H,17H,17H,17H
+		   dw 17H,17H,17H,17H,17H,17H,17H,17H,00H,40H,00H,17H,17H,17H,17H,17H
+		   dw 17H,17H,17H,17H,17H,17H,17H,00H,40H,40H,40H,00H,17H,17H,17H,17H
+		   dw 17H,17H,17H,17H,17H,17H,00H,40H,40H,40H,40H,40H,00H,17H,17H,17H
+		   dw 17H,17H,17H,17H,17H,00H,40H,40H,40H,40H,40H,00H,00H,17H,17H,17H
+		   dw 17H,17H,17H,17H,00H,40H,40H,40H,40H,40H,00H,40H,00H,17H,17H,17H
+		   dw 17H,17H,17H,00H,40H,40H,40H,40H,40H,00H,40H,40H,00H,17H,17H,17H
+		   dw 17H,17H,00H,40H,00H,40H,40H,40H,00H,40H,40H,00H,17H,17H,17H,17H
+		   dw 17H,17H,00H,40H,40H,00H,40H,00H,40H,40H,00H,17H,17H,17H,17H,17H
+		   dw 17H,17H,17H,00H,40H,40H,00H,40H,40H,00H,17H,17H,17H,17H,17H,17H
+		   dw 17H,17H,17H,17H,00H,40H,00H,40H,00H,17H,17H,17H,17H,17H,17H,17H
+		   dw 17H,17H,17H,17H,17H,00H,00H,00H,17H,17H,17H,17H,17H,17H,17H,17H
+		   dw 17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H
+		   dw 17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H
 	current_color db 28h
 ; -------------------------------------------------------------------
 ; STACK
