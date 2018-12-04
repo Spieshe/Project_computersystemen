@@ -170,61 +170,37 @@ ret
 endp DrawFullRectangle
 
 PROC draweraser
+	ARG @@file: dword, @@dim: dword, @@x: word, @@y: word
     USES eax, ebx, ecx, edx
     	
-	mov esi, offset eraser
+	mov esi, [@@file]
 	
-	mov ax, 5
+	mov ax, [@@y]
 	mov edx, SCRWIDTH
 	MUL edx
-	add ax, 100
+	add ax, [@@x]
 	
 	mov edi, VMEMADR
 	add edi, eax
-	mov ecx, 16	
+	mov ecx, [@@dim]
 	push ecx
 	rep movsb
-	add edi, 304
+	add edi, 320
+	sub edi, [@@dim]
 	pop ecx
 	dec ecx
-ecxloopke:
+@@ecxloopke:
 	push ecx
-	mov ecx, 16
+	mov ecx, [@@dim]
 	rep movsb
-	add edi, 304
+	add edi, 320
+	sub edi, [@@dim]
 	pop ecx
-	loop ecxloopke
+	loop @@ecxloopke
 
 
 ret
 endp draweraser
-
-PROC drawjerry
-    USES eax, ebx, ecx, edx, esi, edi
-    	
-	mov esi, offset jerry
-	
-	mov ax, 100
-	mov edx, SCRWIDTH
-	MUL edx
-	add ax, 100
-	
-	mov edi, VMEMADR
-	add edi, eax
-	mov ecx, 16	
-	push ecx
-drawhorizontaal:
-	mov ecx, 16
-	mov eax, [esi]
-	;cmp eax, 28H
-	;je skip
-	mov [edi], eax
-	add esi, 4
-	loop drawhorizontaal
-
-
-ret
-endp drawjerry
 
 PROC mouseHandler ;; GEKOPIEERD 
     USES    eax, ebx, ecx, edx
@@ -319,8 +295,8 @@ PROC main
 	call	DrawFullRectangle,210,25,15, 15, 06h ;kleur 8
 	call	DrawFullRectangle,240,25,15, 15, 00h ;kleur 9
 	call	DrawFullRectangle,270,25,15, 15, 0Fh ;kleur 10
-	call	draweraser
-	call	drawjerry
+	call	draweraser,offset eraser,16, 100, 5
+	call	draweraser,offset jerry,3, 100, 100
 	
 	
 	call waitForSpecificKeystroke, 001Bh ; keycode for ESC
@@ -348,22 +324,9 @@ DATASEG
 		   db 17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H
 		   db 17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H
 		   
-	jerry  db 00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,28H,28H,28H,28H
-		   db 00H,1FH,1FH,1FH,1FH,1FH,1FH,1FH,1FH,1FH,1FH,1FH,00H,28H,28H,28H
-		   db 00H,1FH,1FH,1FH,1FH,1FH,1FH,1FH,1FH,1FH,1FH,00H,28H,28H,28H,28H
-		   db 00H,1FH,1FH,1FH,1FH,1FH,1FH,1FH,1FH,1FH,00H,28H,28H,28H,28H,28H
-		   db 00H,1FH,1FH,1FH,1FH,1FH,1FH,1FH,1FH,00H,28H,28H,28H,28H,28H,28H
-		   db 00H,1FH,1FH,1FH,1FH,1FH,1FH,1FH,00H,28H,28H,28H,28H,28H,28H,28H
-		   db 00H,1FH,1FH,1FH,1FH,1FH,1FH,00H,1FH,00H,28H,28H,28H,28H,28H,28H
-		   db 00H,1FH,1FH,1FH,1FH,1FH,00H,1FH,1FH,1FH,00H,28H,28H,28H,28H,28H
-		   db 00H,1FH,1FH,1FH,1FH,00H,1FH,1FH,1FH,1FH,1FH,00H,28H,28H,28H,28H
-		   db 00H,1FH,1FH,1FH,00H,28H,00H,1FH,1FH,1FH,1FH,1FH,00H,28H,28H,28H
-		   db 00H,1FH,1FH,00H,28H,28H,28H,00H,1FH,1FH,1FH,1FH,1FH,00H,28H,28H
-		   db 00H,1FH,00H,28H,28H,28H,28H,28H,00H,1FH,1FH,1FH,1FH,1FH,00H,28H
-		   db 28H,00H,28H,28H,28H,28H,28H,28H,28H,00H,1FH,1FH,1FH,1FH,1FH,00H
-		   db 28H,28H,28H,28H,28H,28H,28H,28H,28H,28H,00H,1FH,1FH,1FH,00H,28H
-		   db 28H,28H,28H,28H,28H,28H,28H,28H,28H,28H,28H,00H,1FH,00H,28H,28H
-		   db 28H,28H,28H,28H,28H,28H,28H,28H,28H,28H,28H,28H,00H,28H,28H,28H
+	jerry  db 00H,00H,00H
+		   db 00H,1FH,00H
+		   db 00H,00H,00H
 	current_color db 28h
 ; -------------------------------------------------------------------
 ; STACK
