@@ -222,29 +222,178 @@ PROC mouseHandler ;; GEKOPIEERD
     ret
 ENDP mouseHandler
 
-PROC mouseposition	;;KOPIE VAN MOUSEHANDLER AANGEPAST
+PROC mouseposition
     USES    eax, ebx, ecx, edx
-    
+	    
 	and bl, 3			; check for two mouse buttons (2 low end bits)
-	jz @@skipit			; only execute if a mousebutton is pressed
-
-    movzx eax, dx		; get mouse height
-    cmp eax, 55
-    jge @@callmousehandler
-    
-	mov edx, SCRWIDTH
-	mul edx				; obtain vertical offset in eax
-	sar cx, 1			; horizontal cursor position is doubled in input 
-	add ax, cx			; add horizontal offset
-	add eax, VMEMADR	; eax now contains pixel address mouse is pointing to
-	jmp @@skipit
+	jz @@skipit2		; only execute if a mousebutton is pressed
 	
+	movzx eax, dx ;get mouse height
+
+;@@checkselectkleur:
+;	movzx eax, dx
+	cmp eax, 40
+	jle @@checkrij
+
+@@checkteken:
+    cmp eax, 55 ; zodat er niet getekend kan worden op de bovenkant waar de kleuren worden getoont
+    jge @@callmousehandler
+;	jmp @@checkselectkleur
+	 
+	jmp @@skipit2
+	
+@@checkrij:
+	cmp eax, 20
+	jle @@bovenrij 
+	
+	cmp eax, 40
+	jle @@onderrij
+	jmp @@skipit2
+	
+@@bovenrij:
+	cmp eax, 5
+	jge @@checkkleurbovenrij
+	jmp @@checkteken
+	
+@@onderrij: 
+	cmp eax, 25
+	jge @@checkkleuronderrij
+	jmp @@checkteken
+	
+@@checkkleurbovenrij: 
+
+	sar cx, 1	
+	
+	cmp cx, 166
+	jle @@kleur1
+	
+	cmp cx, 196
+	jle @@kleur2
+	
+	cmp cx, 226
+	jle @@kleur3
+	
+	cmp cx, 256
+	jle @@kleur4
+	
+	cmp cx, 286
+	jle @@kleur5
+	
+	jmp @@checkteken
+	
+	
+@@checkkleuronderrij: 
+
+	sar cx, 1	
+	
+	cmp cx, 166
+	jle @@kleur6
+	
+	cmp cx, 196
+	jle @@kleur7
+	
+	cmp cx, 226
+	jle @@kleur8
+	
+	cmp cx, 256
+	jle @@kleur9
+	
+	cmp cx, 286
+	jle @@kleur10
+	
+	jmp @@checkteken
+	
+@@kleur1:	
+	cmp cx, 150
+	jge @@k1
+	jmp @@checkteken
+	@@k1:
+	mov [current_color], 15h
+	jmp @@checkteken
+		
+@@kleur2:
+	cmp cx, 180
+	jge @@k2
+	jmp @@checkteken
+	@@k2:
+	mov [current_color], 23h
+	jmp @@checkteken
+	
+@@kleur3:
+	cmp cx, 210
+	jge @@k3
+	jmp @@checkteken
+	@@k3: 
+	mov [current_color], 24h
+	jmp @@checkteken
+	
+@@kleur4:
+	cmp cx, 240
+	jge @@k4
+	jmp @@checkteken
+	@@k4: 
+	mov [current_color], 28h
+	jmp @@checkteken
+	
+@@kleur5:
+	cmp cx, 270
+	jge @@k5
+	jmp @@checkteken
+	@@k5: 
+	mov [current_color], 2Ah
+	jmp @@checkteken
+
+@@kleur6:	
+	cmp cx, 150
+	jge @@k6
+	jmp @@checkteken
+	@@k6:
+	mov [current_color], 2CH
+	jmp @@checkteken
+		
+@@kleur7:
+	cmp cx, 180
+	jge @@k7
+	jmp @@checkteken
+	@@k7:
+	mov [current_color], 2Fh
+	jmp @@checkteken
+	
+@@kleur8:
+	cmp cx, 210
+	jge @@k3
+	jmp @@checkteken
+	@@k: 
+	mov [current_color], 06h
+	jmp @@checkteken
+	
+@@kleur9:
+	cmp cx, 240
+	jge @@k9
+	jmp @@checkteken
+	@@k9: 
+	mov [current_color], 00h
+	jmp @@checkteken
+	
+@@kleur10:
+	cmp cx, 270
+	jge @@k10
+	jmp @@checkteken
+	@@k10: 
+	mov [current_color], 0Fh
+	jmp @@checkteken
+
+
 @@callmousehandler:
 	call mouseHandler
 	
-@@skipit:
+	
+@@skipit2:
     ret
 ENDP mouseposition
+; Copyright (c) 2015, Tim Bruylants <tim.bruylants@gmail.com>
+; All rights reserved.
+; met redelijk wat aanpassingen
 
 
 ; ; Wait for a specific keystroke.
