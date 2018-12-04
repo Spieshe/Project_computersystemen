@@ -361,9 +361,9 @@ PROC mouseposition
 	
 @@kleur8:
 	cmp cx, 210
-	jge @@k3
+	jge @@k8
 	jmp @@checkteken
-	@@k: 
+	@@k8: 
 	mov [current_color], 06h
 	jmp @@checkteken
 	
