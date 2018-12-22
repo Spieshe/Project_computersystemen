@@ -3,9 +3,9 @@
 ; 32-bit x86 assembly language
 ; TASM
 ;
-; author:	Cindy Wauters, Dries Van de Steen
-; date:		23/10/2018
-; program:	Paintapplication
+; author:	Dries Van de Steen, Cindy Wauters
+; date:		24/12/2018
+; program:	Paint
 ; -------------------------------------------------------------------
 
 IDEAL
@@ -15,12 +15,33 @@ ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 
 INCLUDE "mouse.inc"
 
-; compile-time constants (with macros)
 VMEMADR EQU 0A0000h	; video memory address
 SCRWIDTH EQU 320	; screen witdth
 SCRHEIGHT EQU 200	; screen height
+col1to5y EQU 5
+col6to10y EQU 25
+col1and6x EQU 150
+col2and7x EQU 180
+col3and8x EQU 210
+col4and9x EQU 240
+col5and10x EQU 270
+colbandex EQU 100
+colb1andb3 EQU 25
+colb2 EQU 55
+dimsprites EQU 16
+color1 EQU 20h
+color2 EQU 23h
+color3 EQU 24h
+color4 EQU 28h
+color5 EQU 2Ah
+color6 EQU 2Ch
+color7 EQU 2Fh
+color8 EQU 06h
+color9 EQU 00h
+white EQU 0Fh
 
 ; -------------------------------------------------------------------
+
 CODESEG
 
 ; Set the video mode
@@ -32,23 +53,6 @@ PROC setVideoMode
 	int 10h
 ret
 ENDP setVideoMode
-
-; create a gradient palette
-PROC gradientPalette
-	USES edi, eax
-	
-	mov edi, offset palette
-	xor al, al
-	
-@@colorloop:
-	stosb
-	stosb
-	stosb
-	inc al
-	cmp al, 64
-	jne @@colorloop
-ret	
-ENDP gradientPalette
 
 ; ; Update the colour palette.
 PROC updateColourPalette
@@ -71,7 +75,6 @@ PROC updateColourPalette
 		
 		ret
 ENDP updateColourPalette
-
 
 ; ; Fill the background (for mode 13h)
 PROC fillBackground
@@ -124,7 +127,9 @@ ENDP fillBackground
 	mov ecx, edx
 	rep stosb
 	ret
-endp drawRectangle2	
+endp drawRectangle2
+; bovenstaande functies werden gehaald van de wpo's
+; auteurs van code: Stijn Bettens, David Blinder
 
 PROC DrawFullRectangle
 	arg @@x: word, @@y: word, @@br:word, @@h: word, @@col: byte
@@ -168,8 +173,9 @@ PROC DrawFullRectangle
 
 ret
 endp DrawFullRectangle
+; sterk gebaseerd op de code van draw rectangle (auteurs:  Stijn Bettens, David Blinder)
 
-PROC draweraser
+PROC drawsprite
 	ARG @@file: dword, @@dim: dword, @@x: word, @@y: word
     USES eax, ebx, ecx, edx
     	
@@ -200,201 +206,645 @@ PROC draweraser
 
 
 ret
-endp draweraser
-
-PROC mouseHandler ;; GEKOPIEERD 
-    USES    eax, ebx, ecx, edx
+endp drawsprite
+PROC drawjerry
+	Uses	eax, ebx, ecx, edx
+	ARG @@file:dword
 	
-	and bl, 3			; check for one mouse buttons 
-	jz @@skipit			; only execute if a mousebutton is pressed
+	cmp [mousey], 52
+	jle @@draw
+	jmp @@end
+	
+@@draw:
+	mov eax, [mousey]
+	mov edx, SCRWIDTH
+	MUL edx
+	add eax, [mousex]
+	mov edi, VMEMADR
+	add edi, eax
+	mov eax, edi
+	mov esi, [@@file]
+	mov ecx, 3
+	push ecx
+	rep movsb
+	add edi, 320
+	sub edi, 3
+	pop ecx
+	dec ecx
+@@ecxloopke:
+	push ecx
+	mov ecx, 3
+	rep movsb
+	add edi, 320
+	sub edi, 3
+	pop ecx
+	loop @@ecxloopke
+	
+@@end:
 
-    movzx eax, dx		; get mouse height
+ret
+endp drawjerry
+
+PROC checkcurrent  ;zorgt er voor dat de witte/zwarte selectiekaders rond de sprites verdwijnen en dat de sprites hertekend worden
+	USES eax, ebx
+	
+	mov eax, [previous]
+	mov ebx, [current]
+	cmp eax, ebx
+	je @@end
+	
+	
+	cmp [previous], 0
+	je @@undo0
+	cmp [previous], 1
+	je @@undo1
+	cmp [previous], 2
+	je @@undo2
+	cmp [previous], 3
+	je @@undo3
+	cmp [previous], 4
+	je @@undo4
+	cmp [previous], 5
+	je @@undo5
+	cmp [previous], 6
+	je @@undo6
+	cmp [previous], 7
+	je @@undo7
+	cmp [previous], 8
+	je @@undo8
+	cmp [previous], 9
+	je @@undo9
+	cmp [previous], 10
+	je @@undo10
+	cmp [previous], 11
+	je @@undo11
+	cmp [previous], 12
+	je @@undo12
+	cmp [previous], 13
+	je @@undo13
+	cmp [previous], 14
+	je @@undo14
+	jmp @@end
+	
+@@undo0:
+	call drawsprite,offset eraser,dimsprites, colbandex, 5
+	jmp @@end
+@@undo1:
+	call DrawFullRectangle,col1and6x,col1to5y,dimsprites,dimsprites,color1
+	jmp @@end
+@@undo2:
+	call DrawFullRectangle,col2and7x,col1to5y,dimsprites,dimsprites,color2
+	jmp @@end
+@@undo3:
+	call DrawFullRectangle,col3and8x,col1to5y,dimsprites,dimsprites,color3
+	jmp @@end
+@@undo4:
+	call DrawFullRectangle,col4and9x,col1to5y,dimsprites,dimsprites,color4
+	jmp @@end
+@@undo5:
+	call DrawFullRectangle,col5and10x,col1to5y,dimsprites,dimsprites,color5
+	jmp @@end
+@@undo6:
+	call DrawFullRectangle,col1and6x,col6to10y,dimsprites,dimsprites,color6
+	jmp @@end
+@@undo7:
+	call DrawFullRectangle,col2and7x,col6to10y,dimsprites,dimsprites,color7
+	jmp @@end
+@@undo8:
+	call DrawFullRectangle,col3and8x,col6to10y,dimsprites,dimsprites,color8
+	jmp @@end
+@@undo9:
+	call DrawFullRectangle,col4and9x,col6to10y,dimsprites,dimsprites,color9
+	jmp SHORT @@end
+@@undo10:
+	call DrawFullRectangle,col5and10x,col6to10y,dimsprites,dimsprites,white
+	jmp SHORT @@end
+@@undo11:	
+	call drawsprite,offset bucket,dimsprites, colbandex, 25
+	jmp SHORT @@end
+@@undo12:
+	call	drawsprite,offset brush1,dimsprites, colb1andb3, 5
+	jmp SHORT @@end
+@@undo13:
+	call	drawsprite,offset brush2,dimsprites, colb2, 5
+	jmp SHORT @@end
+@@undo14:
+	call	drawsprite,offset brush3,dimsprites, colb1andb3, 25
+
+@@end:
+ret
+endp checkcurrent
+
+PROC mouseHandler ;; GEKOPIEERD, MET AANPASSINGEN
+    USES    eax, ebx, ecx, edx
+	call drawjerry, offset underneath
+	movzx eax, dx		; get mouse height
+	mov [mousey], eax
 	mov edx, SCRWIDTH
 	mul edx				; obtain vertical offset in eax
 	sar cx, 1			; horizontal cursor position is doubled in input 
+	mov [mousex], ecx
 	add ax, cx			; add horizontal offset
+	call drawjerry, offset jerry
 	add eax, VMEMADR	; eax now contains pixel address mouse is pointing to
+	and bl, 3			; check for one mouse buttons 
+	jz SHORT @@skipit			; only execute if a mousebutton is pressed
+    
+	cmp [block], 1
+	je @@skipit
 	mov bl, [current_color]
 	mov [eax], bl	; change color
+	
+	cmp [floodfill_on], 1
+	je @@callfloodfill
+	
+	cmp [current_brush], 4
+	jge @@brushsize4
+	jmp @@skipit
+	
+@@brushsize4:
+	mov [eax-1], bl
+	mov [eax + SCRWIDTH], bl
+	mov [eax + SCRWIDTH - 1], bl
+	
+	cmp [current_brush], 9
+	jge @@brushsize9
+	jmp @@skipit
+
+@@brushsize9:
+	mov [eax+1], bl
+	mov [eax+SCRWIDTH+1], bl
+	mov [EAX+SCRWIDTH+SCRWIDTH], bl
+	mov [EAX+SCRWIDTH+SCRWIDTH+1], bl
+	mov [EAX+SCRWIDTH+SCRWIDTH-1], bl
+	jmp @@skipit
+	
+@@callfloodfill:
+	call floodfill
 
 
-	@@skipit:
-    ret
+@@skipit:
+   ret
 ENDP mouseHandler
 
 PROC mouseposition
     USES    eax, ebx, ecx, edx
-	    
-	and bl, 3			; check for two mouse buttons (2 low end bits)
-	jz @@skipit2		; only execute if a mousebutton is pressed
+
 	
 	movzx eax, dx ;get mouse height
-
-;@@checkselectkleur:
-;	movzx eax, dx
 	cmp eax, 40
-	jle @@checkrij
+	jle @@checkrow
+	
+	
 
-@@checkteken:
-    cmp eax, 55 ; zodat er niet getekend kan worden op de bovenkant waar de kleuren worden getoont
+@@checkdraw:
+    cmp [mousey], 55 ; zodat er niet getekend kan worden op de bovenkant waar de kleuren worden getoont
+	mov [block], 0
     jge @@callmousehandler
-;	jmp @@checkselectkleur
 	 
 	jmp @@skipit2
 	
-@@checkrij:
-	cmp eax, 20
-	jle @@bovenrij 
-	
-	cmp eax, 40
-	jle @@onderrij
+@@checkrow:
+	mov [block], 1
+	cmp [mousey], 20
+	jle @@upperrow
+	cmp [mousey], 40
+	jle @@lowerrow
 	jmp @@skipit2
 	
-@@bovenrij:
-	cmp eax, 5
-	jge @@checkkleurbovenrij
-	jmp @@checkteken
+@@upperrow:
+	cmp [mousey], col1to5y
+	jge @@checkcolorupperrow
+	jmp @@checkdraw
 	
-@@onderrij: 
-	cmp eax, 25
-	jge @@checkkleuronderrij
-	jmp @@checkteken
+@@lowerrow: 
+	cmp [mousey], col6to10y
+	jge @@checkcolorlowerrow
+	jmp @@checkdraw
 	
-@@checkkleurbovenrij: 
+@@checkcolorupperrow: 
 
-	sar cx, 1	
+	cmp [mousex], 41
+	jle @@brush1
 	
-	cmp cx, 166
-	jle @@kleur1
-	
-	cmp cx, 196
-	jle @@kleur2
-	
-	cmp cx, 226
-	jle @@kleur3
-	
-	cmp cx, 256
-	jle @@kleur4
-	
-	cmp cx, 286
-	jle @@kleur5
-	
-	jmp @@checkteken
-	
-	
-@@checkkleuronderrij: 
+	cmp [mousex], 71
+	jle @@brush2	
 
-	sar cx, 1	
+	cmp [mousex], 116
+	jle @@eraser
 	
-	cmp cx, 166
-	jle @@kleur6
+	cmp [mousex], 166
+	jle @@color1
 	
-	cmp cx, 196
-	jle @@kleur7
+	cmp [mousex], 196
+	jle @@color2
 	
-	cmp cx, 226
-	jle @@kleur8
+	cmp [mousex], 226
+	jle @@color3
 	
-	cmp cx, 256
-	jle @@kleur9
+	cmp [mousex], 256
+	jle @@color4
 	
-	cmp cx, 286
-	jle @@kleur10
+	cmp [mousex], 286
+	jle @@color5
 	
-	jmp @@checkteken
+	jmp @@checkdraw
 	
-@@kleur1:	
-	cmp cx, 150
-	jge @@k1
-	jmp @@checkteken
-	@@k1:
-	mov [current_color], 15h
-	jmp @@checkteken
+	
+@@checkcolorlowerrow: 
+
+	cmp [mousex], 41
+	jle @@brush3
+
+	cmp [mousex], 116
+	jle @@bucket
+	
+	cmp [mousex], 166
+	jle @@color6
+	
+	cmp [mousex], 196
+	jle @@color7
+	
+	cmp [mousex], 226
+	jle @@color8
+	
+	cmp [mousex], 256
+	jle @@color9
+	
+	cmp [mousex], 286
+	jle @@color10
+	
+	jmp @@checkdraw
+	
+@@bucket:
+	cmp [mousex], colbandex
+	jge @@buck
+	jmp @@checkdraw
+	@@buck:
+	mov [current], 11
+	call drawsprite,offset bucket,dimsprites, colbandex, 25
+	call checkcurrent
+	call drawRectangle2, colbandex, col6to10y, dimsprites, dimsprites, white
+	mov [previous], 11
+	and bl, 3
+	jz @@skipit2
+	call drawRectangle2, colbandex, col6to10y, dimsprites, dimsprites, white
+	mov [floodfill_on], 1
+	jmp @@checkdraw
+	
+@@eraser:
+	cmp [mousex], colbandex
+	jge @@e
+	jmp @@checkdraw
+	@@e:
+	mov [current], 0
+	call drawsprite,offset eraser,dimsprites, colbandex, 5
+	call checkcurrent
+	call drawRectangle2,colbandex,col1to5y,dimsprites,dimsprites,white
+	mov [previous], 0
+	and bl, 3
+	jz @@skipit2
+	mov [floodfill_on], 0
+	call drawRectangle2,colbandex,col1to5y,dimsprites,dimsprites,white
+	call DrawFullRectangle,0,55,SCRWIDTH,SCRHEIGHT, white
+	jmp @@checkdraw
+	
+@@color1:	
+	cmp [mousex], col1and6x
+	jge @@c1
+	jmp @@checkdraw
+	@@c1:
+	call DrawFullRectangle,col1and6x,col1to5y,dimsprites, dimsprites, color1 ;color 1
+	mov [current], 1
+	call checkcurrent
+	call drawRectangle2,col1and6x,col1to5y,dimsprites,dimsprites,white
+	mov [previous], 1
+	and bl, 3
+	jz @@skipit2
+	mov [floodfill_on], 0
+	call drawRectangle2,col1and6x,col1to5y,dimsprites,dimsprites,white
+	mov [current_color], color1
+	jmp @@checkdraw
 		
-@@kleur2:
-	cmp cx, 180
-	jge @@k2
-	jmp @@checkteken
-	@@k2:
-	mov [current_color], 23h
-	jmp @@checkteken
+@@color2:
+	cmp [mousex], col2and7x
+	jge @@c2
+	jmp @@checkdraw
+	@@c2:
+	call	DrawFullRectangle,col2and7x,col1to5y,dimsprites, dimsprites, color2 ;color 2
+	mov [current], 2
+	call checkcurrent
+	call drawRectangle2,col2and7x,col1to5y,dimsprites,dimsprites,white
+	mov [previous], 2
+	and bl, 3
+	jz @@skipit2
+	mov [floodfill_on], 0
+	mov [current_color], color2
+	call drawRectangle2,col2and7x,col1to5y,dimsprites,dimsprites,white
+	jmp @@checkdraw
 	
-@@kleur3:
-	cmp cx, 210
-	jge @@k3
-	jmp @@checkteken
-	@@k3: 
-	mov [current_color], 24h
-	jmp @@checkteken
+@@color3:
+	cmp [mousex], col3and8x
+	jge @@c3
+	jmp @@checkdraw
+	@@c3:
+	call	DrawFullRectangle,col3and8x,col1to5y,dimsprites, dimsprites, color3 ;color 3
+	mov [current], 3
+	call  checkcurrent
+	call drawRectangle2,col3and8x,col1to5y,dimsprites,dimsprites,white
+	mov [previous], 3
+	and bl, 3
+	jz @@skipit2
+	mov [floodfill_on], 0
+	call drawRectangle2,col3and8x,col1to5y,dimsprites,dimsprites,white
+	mov [current_color], color3
+	jmp @@checkdraw
 	
-@@kleur4:
-	cmp cx, 240
-	jge @@k4
-	jmp @@checkteken
-	@@k4: 
-	mov [current_color], 28h
-	jmp @@checkteken
+@@color4:
+	cmp [mousex], col4and9x
+	jge @@c4
+	jmp @@checkdraw
+	@@c4: 
+	call	DrawFullRectangle,col4and9x,col1to5y,dimsprites, dimsprites, color4 ;color 4
+	mov [current], 4
+	call checkcurrent
+	call drawRectangle2,col4and9x,col1to5y,dimsprites,dimsprites,white
+	mov [previous], 4
+	and bl, 3
+	jz @@skipit2
+	mov [floodfill_on], 0
+	mov [current_color], color4
+	call drawRectangle2,col4and9x,col1to5y,dimsprites,dimsprites,white; select color 4
+	jmp @@checkdraw
 	
-@@kleur5:
-	cmp cx, 270
-	jge @@k5
-	jmp @@checkteken
-	@@k5: 
-	mov [current_color], 2Ah
-	jmp @@checkteken
+@@color5:
+	cmp [mousex], col5and10x
+	jge @@c5
+	jmp @@checkdraw
+	@@c5: 
+	call	DrawFullRectangle,col5and10x,col1to5y,dimsprites, dimsprites, color5 ;color 5
+	mov [current], 5
+	call checkcurrent
+	call drawRectangle2,col5and10x,col1to5y,dimsprites,dimsprites,white
+	mov [previous], 5
+	and bl, 3
+	jz @@skipit2
+	mov [floodfill_on], 0
+	mov [current_color], color5	
+	call drawRectangle2,col5and10x,col1to5y,dimsprites,dimsprites,white
+	jmp @@checkdraw
 
-@@kleur6:	
-	cmp cx, 150
-	jge @@k6
-	jmp @@checkteken
-	@@k6:
-	mov [current_color], 2CH
-	jmp @@checkteken
+@@color6:	
+	cmp [mousex], col1and6x
+	jge @@c6
+	jmp @@checkdraw
+	@@c6:
+	call	DrawFullRectangle,col1and6x,col6to10y,dimsprites, dimsprites, color6 ;color 6
+	mov [current], 6
+	call checkcurrent
+	call drawRectangle2,col1and6x,col6to10y,dimsprites,dimsprites,white
+	mov [previous], 6
+	and bl, 3
+	jz @@skipit2
+	mov [floodfill_on], 0
+	mov [current_color], color6
+	call drawRectangle2,col1and6x,col6to10y,dimsprites,dimsprites,white
+	jmp @@checkdraw
 		
-@@kleur7:
-	cmp cx, 180
-	jge @@k7
-	jmp @@checkteken
-	@@k7:
-	mov [current_color], 2Fh
-	jmp @@checkteken
+@@color7:
+	cmp [mousex], col2and7x
+	jge @@c7
+	jmp @@checkdraw
+	@@c7:
+	call	DrawFullRectangle,col2and7x,col6to10y,dimsprites, dimsprites, color7 ;color 7
+	mov [current], 7
+	call checkcurrent
+	call drawRectangle2,col2and7x,col6to10y,dimsprites,dimsprites,white
+	mov [previous], 7
+	and bl, 3
+	jz @@skipit2
+	mov [floodfill_on], 0
+	mov [current_color], color7
+	call drawRectangle2,col2and7x,col6to10y,dimsprites,dimsprites,white
+	jmp @@checkdraw
 	
-@@kleur8:
-	cmp cx, 210
-	jge @@k8
-	jmp @@checkteken
-	@@k8: 
-	mov [current_color], 06h
-	jmp @@checkteken
+@@color8:
+	cmp [mousex], col3and8x
+	jge @@c8
+	jmp @@checkdraw
+	@@c8: 
+	call	DrawFullRectangle,col3and8x,col6to10y,dimsprites, dimsprites, color8 ;color 8
+	mov [current], 8
+	call checkcurrent
+	call drawRectangle2,col3and8x,col6to10y,dimsprites,dimsprites,white
+	mov [previous], 8
+	and bl, 3
+	jz @@skipit2
+	mov [floodfill_on], 0
+	mov [current_color], color8
+	call drawRectangle2,col3and8x,col6to10y,dimsprites,dimsprites,white
+	jmp @@checkdraw
 	
-@@kleur9:
-	cmp cx, 240
-	jge @@k9
-	jmp @@checkteken
-	@@k9: 
-	mov [current_color], 00h
-	jmp @@checkteken
+@@color9:
+	cmp [mousex], col4and9x
+	jge @@c9
+	jmp @@checkdraw
+	@@c9: 
+	call	DrawFullRectangle,col4and9x,col6to10y,dimsprites, dimsprites, color9 ;color 9
+	mov [current], 9
+	call checkcurrent
+	call drawRectangle2,col4and9x,col6to10y,dimsprites,dimsprites,white
+	mov [previous], 9
+	and bl, 3
+	jz @@skipit2
+	mov [floodfill_on], 0
+	mov [current_color], color9
+	call drawRectangle2,col4and9x,col6to10y,dimsprites,dimsprites,white
+	jmp @@checkdraw
 	
-@@kleur10:
-	cmp cx, 270
-	jge @@k10
-	jmp @@checkteken
-	@@k10: 
-	mov [current_color], 0Fh
-	jmp @@checkteken
+@@color10:
+	cmp [mousex], col5and10x
+	jge @@c10
+	jmp @@checkdraw
+	@@c10: 
+	call	DrawFullRectangle,col5and10x,col6to10y,dimsprites, dimsprites, white ;color 10
+	mov [current], 10
+	call checkcurrent
+	call drawRectangle2,col5and10x,col6to10y,dimsprites,dimsprites,white
+	mov [previous], 10
+	and bl, 3
+	jz @@skipit2
+	mov [floodfill_on], 0
+	mov [current_color], white
+	call drawRectangle2,col5and10x,col6to10y,dimsprites,dimsprites,color9
+	jmp @@checkdraw
+	
+@@brush1:
+	cmp [mousex], colb1andb3
+	jge @@b1
+	jmp @@checkdraw
+	@@b1:
+	call drawsprite,offset brush1,dimsprites, colb1andb3, 5
+	mov [current], 12
+	call checkcurrent
+	call drawRectangle2,colb1andb3,col1to5y,dimsprites,dimsprites,00H
+	mov [previous], 12
+	and bl, 3
+	jz @@skipit2
+	mov [floodfill_on], 0
+	mov [current_brush], 1
+	call drawRectangle2,colb1andb3,col1to5y,dimsprites,dimsprites,00H
+	jmp @@checkdraw
+
+@@brush2:
+	cmp [mousex], colb2
+	jge @@b2
+	jmp @@checkdraw
+	@@b2:
+	call drawsprite,offset brush2,dimsprites, colb2, 5
+	mov [current], 13
+	call checkcurrent
+	call drawRectangle2,colb2,col1to5y,dimsprites,dimsprites,00H
+	mov [previous], 13
+	and bl, 3
+	jz @@skipit2
+	mov [floodfill_on], 0
+	mov [current_brush], 4
+	call drawRectangle2,colb2,col1to5y,dimsprites,dimsprites,00H
+	jmp @@checkdraw
+	
+@@brush3:
+	cmp [mousex], colb1andb3
+	jge @@b3
+	jmp @@checkdraw
+	@@b3:
+	call drawsprite,offset brush3,dimsprites, colb1andb3, 25
+	mov [current], 14
+	call checkcurrent
+	call drawRectangle2,colb1andb3,col6to10y,dimsprites,dimsprites,00H
+	mov [previous], 14
+	and bl, 3
+	jz @@skipit2
+	mov [floodfill_on], 0
+	mov [current_brush], 9
+	call drawRectangle2,colb1andb3,col6to10y,dimsprites,dimsprites,00H
+	jmp @@checkdraw
 
 
 @@callmousehandler:
+	call	DrawFullRectangle,col1and6x,col1to5y,dimsprites, dimsprites, color1 ;color 1
+	call	DrawFullRectangle,col2and7x,col1to5y,dimsprites, dimsprites, color2 ;color 2
+	call	DrawFullRectangle,col3and8x,col1to5y,dimsprites, dimsprites, color3 ;color 3
+	call	DrawFullRectangle,col4and9x,col1to5y,dimsprites, dimsprites, color4 ;color 4
+	call	DrawFullRectangle,col5and10x,col1to5y,dimsprites, dimsprites, color5 ;color 5
+	call	DrawFullRectangle,col1and6x,col6to10y,dimsprites, dimsprites, color6 ;color 6
+	call	DrawFullRectangle,col2and7x,col6to10y,dimsprites, dimsprites, color7 ;color 7
+	call	DrawFullRectangle,col3and8x,col6to10y,dimsprites, dimsprites, color8 ;color 8
+	call	DrawFullRectangle,col4and9x,col6to10y,dimsprites, dimsprites, color9 ;color 9
+	call	DrawFullRectangle,col5and10x,col6to10y,dimsprites, dimsprites, white ;color 10
+	call drawsprite,offset bucket,dimsprites, colbandex, 25
+	call drawsprite,offset eraser,dimsprites, colbandex, 5
+	call	drawsprite,offset brush1,dimsprites, colb1andb3, 5
+	call	drawsprite,offset brush2,dimsprites, colb2, 5
+	call	drawsprite,offset brush3,dimsprites, colb1andb3, 25
 	call mouseHandler
 	
 	
 @@skipit2:
+	mov [block], 1
+	call mouseHandler
     ret
 ENDP mouseposition
 ; Copyright (c) 2015, Tim Bruylants <tim.bruylants@gmail.com>
 ; All rights reserved.
 ; met redelijk wat aanpassingen
 
+PROC floodfill	
+	USES eax, ebx, ecx 
+	
+	xor ecx, ecx
+;	mov [background_curr_pix
+	mov bl, [current_color]
+	mov [eax], bl
+	
+	add ecx, 1
+	jmp @@colorleft
+
+
+@@start:
+	sub ecx, 1
+	cmp ecx, -1
+	jle SHORT @@stop
+	pop eax
+
+	mov bl, [current_color]
+	mov [eax], bl
+	
+@@colorleft:
+	sub eax, 1
+;	cmp [eax], [background_curr_pix]
+;	jne @@pushonstackleft
+
+;	xor ebx, ebx
+;
+;	mov bl, [background_curr_pix]
+	
+	cmp [eax], bl
+	jne @@pushonstackleft
+	
+	
+	jmp @@colorright
+
+@@pushonstackleft:
+	push eax
+	add ecx, 1
+
+@@colorright:
+	add eax, 2
+	cmp [eax],  bl
+	jne @@pushonstackright
+	jmp @@colorup
+
+@@pushonstackright:
+	
+	push eax
+	add ecx, 1
+
+@@colorup:
+	sub eax, 1
+	add eax, SCRWIDTH
+	cmp [eax], bl
+	jne @@pushonstackup
+
+	
+	jmp @@colordown
+
+@@pushonstackup: 
+	
+	push eax
+	add ecx, 1
+
+@@colordown:
+	sub eax, SCRWIDTH
+	sub eax, SCRWIDTH
+	cmp [eax], bl
+	jne @@pushonstackdown
+	
+	
+	jmp @@start
+
+@@pushonstackdown:
+
+	push eax
+	add ecx, 1
+	jmp @@start
+
+@@stop:
+	ret 
+	;call mouseHandler
+
+ENDP floodfill
+	
 
 ; ; Wait for a specific keystroke.
 PROC waitForSpecificKeystroke
@@ -409,6 +859,36 @@ PROC waitForSpecificKeystroke
 	
 	ret		
 ENDP waitForSpecificKeystroke
+
+PROC waitforkeybrush
+;	ARG @@key:byte
+	USES eax
+	@@waitkey:
+		mov ah, 00h
+		int 16h
+		cmp al, 99
+		je @@99
+		cmp al, 98
+		je @@98
+	jne @@waitkey
+	
+@@99:
+;	mov eax, 00h
+	mov [current_brush], 4
+	mov [floodfill_on], 0
+	jmp @@waitkey
+
+@@98:
+	mov [floodfill_on], 1
+	jmp @@waitkey
+
+ret
+ENDP waitforkeybrush
+; bovenstaande functie werden gehaald van de wpo's met enkele aanpassingen voor de specifieke kleuren 
+; auteurs van code: Stijn Bettens, David Blinder
+
+	
+		
 
 ; Terminate the program.
 PROC terminateProcess
@@ -427,35 +907,55 @@ PROC main
 	pop	es
 
 	call setVideoMode,13h
+	
+	
+		mov eax, 00h
+	
+    call 	mouse_install, offset mouseposition,28h
+	call	fillBackground, white
+	
 
-        call mouse_install, offset mouseposition, 28h
-	call	fillBackground, 1Fh
+	call	DrawFullRectangle,0,0,SCRWIDTH,55, 1dh ; bovenste rechthoek waar kleuren op getoont worden
+	
+	;; later zal er nog een functie geschreven worden zodat dit niet allemaal handmatig moet gebeuren
+	;  al deze vierkantjes geven een kleur weer 
+	call	DrawFullRectangle,col1and6x,col1to5y,dimsprites, dimsprites, color1 ;kleur 1 BLAUW
+	call	DrawFullRectangle,col2and7x,col1to5y,dimsprites, dimsprites, color2 ;kleur 2
+	call	DrawFullRectangle,col3and8x,col1to5y,dimsprites, dimsprites, color3 ;kleur 3
+	call	DrawFullRectangle,col4and9x,col1to5y,dimsprites, dimsprites, color4 ;kleur 4
+	call	DrawFullRectangle,col5and10x,col1to5y,dimsprites, dimsprites, color5 ;kleur 5
+	call	DrawFullRectangle,col1and6x,col6to10y,dimsprites, dimsprites, color6 ;kleur 6 GEEL
+	call	DrawFullRectangle,col2and7x,col6to10y,dimsprites, dimsprites, color7 ;kleur 7
+	call	DrawFullRectangle,col3and8x,col6to10y,dimsprites, dimsprites, color8 ;kleur 8
+	call	DrawFullRectangle,col4and9x,col6to10y,dimsprites, dimsprites, color9 ;kleur 9
+	call	DrawFullRectangle,col5and10x,col6to10y,dimsprites, dimsprites, white ;kleur 10
+	call	drawsprite,offset eraser,dimsprites, colbandex, 5
+	call	drawsprite,offset bucket,dimsprites, colbandex, 25
+	call	drawsprite,offset brush1,dimsprites, colb1andb3, 5
+	call	drawsprite,offset brush2,dimsprites, colb2, 5
+	call	drawsprite,offset brush3,dimsprites, colb1andb3, 25
+	
+	
+	call waitforkeybrush
 
-	
-	
-	call	DrawFullRectangle,0,0,SCRWIDTH,55, 1Dh   ; bovenbalk
-	call	DrawFullRectangle,150,5,15, 15, 15h ;kleur 1
-	call	DrawFullRectangle,180,5,15, 15, 23h ;kleur 2
-	call	DrawFullRectangle,210,5,15, 15, 24h ;kleur 3
-	call	DrawFullRectangle,240,5,15, 15, 28h ;kleur 4
-	call	DrawFullRectangle,270,5,15, 15, 2Ah ;kleur 5
-	call	DrawFullRectangle,150,25,15, 15, 2Ch ;kleur 6
-	call	DrawFullRectangle,180,25,15, 15, 2Fh ;kleur 7
-	call	DrawFullRectangle,210,25,15, 15, 06h ;kleur 8
-	call	DrawFullRectangle,240,25,15, 15, 00h ;kleur 9
-	call	DrawFullRectangle,270,25,15, 15, 0Fh ;kleur 10
-	call	draweraser,offset eraser,16, 100, 5
-	call	draweraser,offset jerry,3, 100, 100
-	
+	;; dit zijn functies om te testen of er effectief van kleuren kan veranderd worden
+	;; voor nu kun je dus ook van kleur veranderen met de c en b toets, maar dit zal nog weggehaald worden
+	call waitForSpecificKeystroke, 99
+	mov [current_brush], 4
+
+	 
+
+
 	
 	call waitForSpecificKeystroke, 001Bh ; keycode for ESC
 	call mouse_uninstall
-	call terminateProcess
+	call terminateProcess, 001Bh
 ENDP main
 
 ; -------------------------------------------------------------------
 DATASEG
 	palette		db 768 dup (?)
+	
 	eraser db 17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H
 		   db 17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H
 		   db 17H,17H,17H,17H,17H,17H,17H,17H,17H,00H,17H,17H,17H,17H,17H,17H
@@ -476,10 +976,103 @@ DATASEG
 	jerry  db 00H,00H,00H
 		   db 00H,1FH,00H
 		   db 00H,00H,00H
-	current_color db 28h
+		   
+	bucket db 17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H
+		   db 17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H
+		   db 17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H
+		   db 17H,17H,17H,33H,36H,36H,36H,36H,36H,36H,36H,36H,36H,36H,17H,17H
+		   db 17H,17H,17H,33H,36H,36H,36H,36H,36H,36H,36H,36H,36H,33H,17H,17H
+		   db 17H,17H,17H,33H,36H,36H,36H,36H,36H,36H,36H,36H,33H,36H,17H,17H
+		   db 17H,17H,17H,33H,36H,36H,36H,36H,36H,36H,36H,36H,33H,17H,17H,17H
+		   db 17H,17H,17H,33H,36H,36H,36H,36H,36H,36H,36H,33H,17H,36H,17H,17H
+		   db 17H,17H,17H,33H,36H,36H,36H,36H,36H,36H,36H,33H,17H,17H,17H,17H
+		   db 17H,17H,17H,33H,36H,36H,36H,36H,36H,36H,33H,17H,17H,17H,17H,17H
+		   db 17H,17H,17H,33H,36H,36H,36H,36H,36H,36H,33H,17H,17H,36H,17H,17H
+		   db 17H,17H,17H,33H,36H,36H,36H,36H,36H,36H,33H,17H,17H,17H,17H,17H
+		   db 17H,17H,17H,17H,33H,36H,36H,36H,36H,33H,17H,17H,17H,17H,17H,17H
+		   db 17H,17H,17H,17H,17H,33H,33H,33H,33H,17H,17H,17H,17H,36H,17H,17H
+		   db 17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,17H
+		   db 17H,17H,17H,17H,17H,17H,17H,17H,17H,17H,36H,36H,36H,36H,36H,17H
+		   
+	brush1 db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   
+	brush2 db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
+		   db 00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   
+	brush3 db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
+		   db 00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
+		   db 00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+		   db 0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH,0FH
+	
+	current_color db 06h
+	
+	current_brush db 1
+	
+	floodfill_on db 0
+	
+	background_curr_pix db 0Fh
+	
+	current dd 4
+	
+	previous dd 4
+	
+	underneath db 1Dh, 1Dh, 1Dh
+			   db 1Dh, 1Dh, 1Dh
+			   db 1Dh, 1Dh, 1Dh
+	block db 0
+	
+
+
+;-------------------------------------------------------------------
+UDATASEG
+	mousex dd ?
+	mousey dd ?
+	pixelcol db ?
+	
 ; -------------------------------------------------------------------
 ; STACK
 ; -------------------------------------------------------------------
-STACK 100h
+STACK 1000h
 
 END main
